@@ -1,0 +1,17 @@
+.env
+.env.example
+/node_modules
+/out
+/dist
+/build
+/coverage
+/logs
+/tmp
+/cache
+/temp
+/var
+/tmp
+/cache
+/temp
+/go.sum
+/go.mod
