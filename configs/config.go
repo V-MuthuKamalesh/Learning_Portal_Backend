@@ -63,8 +63,9 @@ type StorageConfig struct {
 }
 
 type JudgeConfig struct {
-	URL     string
+	URL    string
 	Enabled bool
+	APIKey  string // sent as X-Judge-Key header; must match JUDGE_API_KEY on the judge service
 }
 
 type SMTPConfig struct {
@@ -124,6 +125,7 @@ func Load() *Config {
 		Judge: JudgeConfig{
 			URL:     env("JUDGE_URL", "http://localhost:9090"),
 			Enabled: envBool("JUDGE_ENABLED", true),
+			APIKey:  env("JUDGE_API_KEY", ""),
 		},
 		SMTP: SMTPConfig{
 			Host:     env("SMTP_HOST", "localhost"),

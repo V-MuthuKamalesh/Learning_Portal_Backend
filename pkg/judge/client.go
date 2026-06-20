@@ -33,6 +33,7 @@ type ExecuteResponse struct {
 type Client struct {
 	baseURL string
 	enabled bool
+	apiKey  string
 	http    *http.Client
 }
 
@@ -40,6 +41,7 @@ func NewClient(cfg configs.JudgeConfig) *Client {
 	return &Client{
 		baseURL: strings.TrimRight(cfg.URL, "/"),
 		enabled: cfg.Enabled,
+		apiKey:  cfg.APIKey,
 		http:    &http.Client{Timeout: 30 * time.Second},
 	}
 }
@@ -54,7 +56,15 @@ func (c *Client) Execute(req ExecuteRequest) (*ExecuteResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	res, err := c.http.Post(c.baseURL+"/execute", "application/json", bytes.NewReader(body))
+	httpReq, err := http.NewRequest(http.MethodPost, c.baseURL+"/execute", bytes.NewReader(body))
+	if err != nil {
+		return nil, err
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+	if c.apiKey != "" {
+		httpReq.Header.Set("X-Judge-Key", c.apiKey)
+	}
+	res, err := c.http.Do(httpReq)
 	if err != nil {
 		return nil, err
 	}
