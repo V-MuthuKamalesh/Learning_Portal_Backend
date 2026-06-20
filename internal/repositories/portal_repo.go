@@ -209,7 +209,9 @@ func (r *PracticeRepository) ProgressForStudent(studentID uuid.UUID) ([]models.S
 
 func (r *PracticeRepository) CreateModule(m *models.PracticeModule) error { return r.db.Create(m).Error }
 
-func (r *PracticeRepository) UpdateModule(m *models.PracticeModule) error { return r.db.Save(m).Error }
+func (r *PracticeRepository) UpdateModule(m *models.PracticeModule) error {
+	return r.db.Omit("Questions").Save(m).Error
+}
 
 func (r *PracticeRepository) DeleteModule(collegeID, id uuid.UUID) error {
 	return r.db.Where("college_id = ? AND id = ?", collegeID, id).Delete(&models.PracticeModule{}).Error
