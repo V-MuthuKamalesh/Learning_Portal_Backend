@@ -17,7 +17,7 @@ func NewAdminPracticeHandler(svc *services.AdminPracticeService) *AdminPracticeH
 }
 
 func (h *AdminPracticeHandler) Register(rg *gin.RouterGroup, authMW gin.HandlerFunc) {
-	g := rg.Group("/practice/modules")
+	g := rg.Group("/admin/practice/modules")
 	g.Use(authMW, middleware.RequireAdmin())
 
 	g.GET("", middleware.RequirePermission("question", "read"), h.list)
