@@ -4,22 +4,32 @@ import "time"
 
 // CreateAssessmentRequest creates a draft assessment shell.
 type CreateAssessmentRequest struct {
-	Title           string `json:"title" binding:"required"`
-	Description     string `json:"description"`
-	Type            string `json:"type" binding:"required"`
-	DurationMinutes int    `json:"duration_minutes"`
-	TotalMarks      int    `json:"total_marks"`
+	Title             string  `json:"title" binding:"required"`
+	Description       string  `json:"description"`
+	Type              string  `json:"type" binding:"required"`
+	DurationMinutes   int     `json:"duration_minutes"`
+	TotalMarks        int     `json:"total_marks"`
+	PassingMarks      int     `json:"passing_marks"`
+	NegativeMarking   bool    `json:"negative_marking"`
+	NegativeMarks     float64 `json:"negative_marks"`
+	ShuffleQuestions  bool    `json:"shuffle_questions"`
+	CodingScoringMode string  `json:"coding_scoring_mode"` // "weighted" | "attempt_penalty"
 }
 
 // UpdateAssessmentRequest edits assessment metadata and schedule.
 type UpdateAssessmentRequest struct {
-	Title           *string    `json:"title"`
-	Description     *string    `json:"description"`
-	Type            *string    `json:"type"`
-	DurationMinutes *int       `json:"duration_minutes"`
-	TotalMarks      *int       `json:"total_marks"`
-	StartTime       *time.Time `json:"start_time"`
-	EndTime         *time.Time `json:"end_time"`
+	Title             *string    `json:"title"`
+	Description       *string    `json:"description"`
+	Type              *string    `json:"type"`
+	DurationMinutes   *int       `json:"duration_minutes"`
+	TotalMarks        *int       `json:"total_marks"`
+	PassingMarks      *int       `json:"passing_marks"`
+	NegativeMarking   *bool      `json:"negative_marking"`
+	NegativeMarks     *float64   `json:"negative_marks"`
+	ShuffleQuestions  *bool      `json:"shuffle_questions"`
+	CodingScoringMode *string    `json:"coding_scoring_mode"`
+	StartTime         *time.Time `json:"start_time"`
+	EndTime           *time.Time `json:"end_time"`
 }
 
 // AttachQuestionsRequest links questions to an assessment.

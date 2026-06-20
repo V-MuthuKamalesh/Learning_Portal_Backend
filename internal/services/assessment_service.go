@@ -38,15 +38,24 @@ func (s *AssessmentService) Create(collegeID uuid.UUID, adminID uuid.UUID, req d
 	if marks <= 0 {
 		marks = 100
 	}
+	scoringMode := req.CodingScoringMode
+	if scoringMode != "attempt_penalty" {
+		scoringMode = "weighted"
+	}
 	a := &models.Assessment{
-		CollegeID:       collegeID,
-		Title:           req.Title,
-		Description:     req.Description,
-		Type:            aType,
-		DurationMinutes: duration,
-		TotalMarks:      marks,
-		Status:          models.StatusDraft,
-		CreatedBy:       &adminID,
+		CollegeID:         collegeID,
+		Title:             req.Title,
+		Description:       req.Description,
+		Type:              aType,
+		DurationMinutes:   duration,
+		TotalMarks:        marks,
+		PassingMarks:      req.PassingMarks,
+		NegativeMarking:   req.NegativeMarking,
+		NegativeMarks:     req.NegativeMarks,
+		ShuffleQuestions:  req.ShuffleQuestions,
+		CodingScoringMode: scoringMode,
+		Status:            models.StatusDraft,
+		CreatedBy:         &adminID,
 	}
 	return a, s.repo.Create(a)
 }
@@ -59,11 +68,24 @@ func (s *AssessmentService) Update(collegeID, id uuid.UUID, req dto.UpdateAssess
 	applyStr(&a.Title, req.Title)
 	applyStr(&a.Description, req.Description)
 	applyStr(&a.Type, req.Type)
+	applyStr(&a.CodingScoringMode, req.CodingScoringMode)
 	if req.DurationMinutes != nil {
 		a.DurationMinutes = *req.DurationMinutes
 	}
 	if req.TotalMarks != nil {
 		a.TotalMarks = *req.TotalMarks
+	}
+	if req.PassingMarks != nil {
+		a.PassingMarks = *req.PassingMarks
+	}
+	if req.NegativeMarking != nil {
+		a.NegativeMarking = *req.NegativeMarking
+	}
+	if req.NegativeMarks != nil {
+		a.NegativeMarks = *req.NegativeMarks
+	}
+	if req.ShuffleQuestions != nil {
+		a.ShuffleQuestions = *req.ShuffleQuestions
 	}
 	if req.StartTime != nil {
 		a.StartTime = req.StartTime

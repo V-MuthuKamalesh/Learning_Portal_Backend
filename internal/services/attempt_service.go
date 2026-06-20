@@ -138,12 +138,14 @@ func (s *AttemptService) buildAttemptDetail(a *models.Assessment, sub *models.Su
 			continue
 		}
 		coding[key] = dto.CodingSubmissionView{
-			Language:     cs.Language,
-			SourceCode:   cs.SourceCode,
-			Status:       cs.Status,
-			PassedCases:  cs.PassedCases,
-			TotalCases:   cs.TotalCases,
-			MarksAwarded: cs.MarksAwarded,
+			Language:       cs.Language,
+			SourceCode:     cs.SourceCode,
+			Status:         cs.Status,
+			PassedCases:    cs.PassedCases,
+			TotalCases:     cs.TotalCases,
+			MarksAwarded:   cs.MarksAwarded,
+			AttemptCount:   cs.AttemptCount,
+			FailedAttempts: cs.FailedAttempts,
 		}
 	}
 	questions := make([]dto.AttemptQuestion, 0, len(a.Questions))
@@ -187,10 +189,15 @@ func (s *AttemptService) buildAttemptDetail(a *models.Assessment, sub *models.Su
 			})
 		}
 	}
+	scoringMode := a.CodingScoringMode
+	if scoringMode == "" {
+		scoringMode = "weighted"
+	}
 	return &dto.AttemptDetail{
 		ID: sub.ID.String(), AssessmentID: a.ID.String(), Status: sub.Status,
 		StartedAt: sub.StartedAt, ExpiresAt: expires,
 		Questions: questions, Answers: answers, Coding: coding,
+		CodingScoringMode: scoringMode,
 	}
 }
 

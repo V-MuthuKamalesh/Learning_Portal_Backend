@@ -53,6 +53,14 @@ func (r *AttemptRepository) UpsertAnswer(a *models.Answer) error {
 	return r.db.Save(&existing).Error
 }
 
+// FindCodingSubmission returns the current submission record for a question attempt, or ErrNotFound.
+func (r *AttemptRepository) FindCodingSubmission(submissionID, assessmentQuestionID uuid.UUID) (*models.CodingSubmission, error) {
+	var cs models.CodingSubmission
+	err := r.db.Where("submission_id = ? AND assessment_question_id = ?", submissionID, assessmentQuestionID).
+		First(&cs).Error
+	return wrap(&cs, err)
+}
+
 func (r *AttemptRepository) UpsertCodingSubmission(cs *models.CodingSubmission) error {
 	var existing models.CodingSubmission
 	q := r.db.Where("student_id = ? AND question_id = ?", cs.StudentID, cs.QuestionID)
@@ -64,6 +72,9 @@ func (r *AttemptRepository) UpsertCodingSubmission(cs *models.CodingSubmission) 
 	}
 	err := q.First(&existing).Error
 	if err == gorm.ErrRecordNotFound {
+		if cs.AttemptCount <= 0 {
+			cs.AttemptCount = 1
+		}
 		return r.db.Create(cs).Error
 	}
 	if err != nil {
@@ -78,6 +89,8 @@ func (r *AttemptRepository) UpsertCodingSubmission(cs *models.CodingSubmission) 
 	existing.RuntimeMS = cs.RuntimeMS
 	existing.MemoryKB = cs.MemoryKB
 	existing.Verdict = cs.Verdict
+	existing.AttemptCount = cs.AttemptCount
+	existing.FailedAttempts = cs.FailedAttempts
 	return r.db.Save(&existing).Error
 }
 

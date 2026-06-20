@@ -67,11 +67,12 @@ func (s *CodingService) RunAttemptQuestion(
 	submissionID, studentID, assessmentQuestionID uuid.UUID,
 	req dto.SubmitCodingRequest,
 ) (*dto.CodingRunResult, error) {
-	_, prog, marks, err := s.loadProgrammingContext(submissionID, studentID, assessmentQuestionID)
+	_, prog, marks, _, err := s.loadProgrammingContext(submissionID, studentID, assessmentQuestionID)
 	if err != nil {
 		return nil, err
 	}
-	return s.evaluateCode(prog, marks, req.Language, req.SourceCode, false)
+	// Run-mode: public tests only, no penalty, not graded
+	return s.evaluateCode(prog, marks, req.Language, req.SourceCode, false, "weighted", 0)
 }
 
 func (s *CodingService) SubmitAttemptQuestion(
@@ -85,13 +86,45 @@ func (s *CodingService) SubmitAttemptQuestion(
 	if sub.StudentID != studentID || sub.Status != models.SubInProgress {
 		return nil, ErrAttemptClosed
 	}
-	aq, prog, marks, err := s.loadProgrammingContext(submissionID, studentID, assessmentQuestionID)
+	aq, prog, marks, scoringMode, err := s.loadProgrammingContext(submissionID, studentID, assessmentQuestionID)
 	if err != nil {
 		return nil, err
 	}
-	result, err := s.evaluateCode(prog, marks, req.Language, req.SourceCode, true)
+
+	// Determine prior failed attempts for penalty calculation.
+	priorFailed := 0
+	priorAttemptCount := 0
+	existing, lookupErr := s.attemptRepo.FindCodingSubmission(submissionID, assessmentQuestionID)
+	if lookupErr == nil {
+		priorAttemptCount = existing.AttemptCount
+		priorFailed = existing.FailedAttempts
+		// If the last attempt also wasn't fully accepted, count it as a failure.
+		if existing.Status != models.JudgeAccepted {
+			priorFailed = existing.FailedAttempts + 1
+		} else {
+			// Already accepted — keep previous failed count (don't add more).
+			priorFailed = existing.FailedAttempts
+		}
+	}
+
+	result, err := s.evaluateCode(prog, marks, req.Language, req.SourceCode, true, scoringMode, priorFailed)
 	if err != nil {
 		return nil, err
+	}
+
+	// Compute new failure count: if this attempt is not fully accepted, it's a failure.
+	newFailed := priorFailed
+	if lookupErr != nil {
+		// First attempt — no prior failures contributed yet.
+		newFailed = 0
+		if result.Status != models.JudgeAccepted {
+			newFailed = 1
+		}
+	}
+
+	newAttemptCount := priorAttemptCount + 1
+	if newAttemptCount <= 0 {
+		newAttemptCount = 1
 	}
 
 	verdictJSON, _ := json.Marshal(map[string]any{"results": result.Results})
@@ -110,30 +143,35 @@ func (s *CodingService) SubmitAttemptQuestion(
 		MarksAwarded:         result.MarksAwarded,
 		RuntimeMS:            result.RuntimeMS,
 		Verdict:              verdict,
+		AttemptCount:         newAttemptCount,
+		FailedAttempts:       newFailed,
 	}
 	if err := s.attemptRepo.UpsertCodingSubmission(cs); err != nil {
 		return nil, err
 	}
+	result.AttemptCount = newAttemptCount
+	result.FailedAttempts = newFailed
 	return result, nil
 }
 
+// loadProgrammingContext validates the attempt and loads the programming question + scoring config.
 func (s *CodingService) loadProgrammingContext(
 	submissionID, studentID, assessmentQuestionID uuid.UUID,
-) (*models.AssessmentQuestion, *models.ProgrammingQuestion, int, error) {
+) (*models.AssessmentQuestion, *models.ProgrammingQuestion, int, string, error) {
 	sub, err := s.attemptRepo.SubmissionByID(submissionID)
 	if err != nil {
-		return nil, nil, 0, err
+		return nil, nil, 0, "", err
 	}
 	if sub.StudentID != studentID || sub.Status != models.SubInProgress {
-		return nil, nil, 0, ErrAttemptClosed
+		return nil, nil, 0, "", ErrAttemptClosed
 	}
 	st, err := s.studentRepo.FindByID(studentID)
 	if err != nil {
-		return nil, nil, 0, err
+		return nil, nil, 0, "", err
 	}
 	a, err := s.assessRepo.ByID(st.CollegeID, sub.AssessmentID)
 	if err != nil {
-		return nil, nil, 0, err
+		return nil, nil, 0, "", err
 	}
 	var aq *models.AssessmentQuestion
 	for i := range a.Questions {
@@ -143,20 +181,29 @@ func (s *CodingService) loadProgrammingContext(
 		}
 	}
 	if aq == nil || aq.Question == nil || aq.Question.Programming == nil {
-		return nil, nil, 0, fmt.Errorf("programming question not found")
+		return nil, nil, 0, "", fmt.Errorf("programming question not found")
 	}
 	marks := a.TotalMarks / max(len(a.Questions), 1)
 	if aq.Marks != nil {
 		marks = *aq.Marks
 	}
-	return aq, aq.Question.Programming, marks, nil
+	scoringMode := a.CodingScoringMode
+	if scoringMode == "" {
+		scoringMode = "weighted"
+	}
+	return aq, aq.Question.Programming, marks, scoringMode, nil
 }
 
+// evaluateCode runs the source against test cases and computes marks.
+// scoringMode: "weighted" | "attempt_penalty"
+// failedAttempts: number of prior failed submissions (for attempt_penalty mode)
 func (s *CodingService) evaluateCode(
 	prog *models.ProgrammingQuestion,
 	totalMarks int,
 	language, source string,
 	includeHidden bool,
+	scoringMode string,
+	failedAttempts int,
 ) (*dto.CodingRunResult, error) {
 	if !s.judge.Enabled() {
 		return nil, errors.New("judge service is disabled")
@@ -220,17 +267,22 @@ func (s *CodingService) evaluateCode(
 		lastStderr = out.Stderr
 		lastRuntime = out.RuntimeMS
 		row.ActualOutput = out.Stdout
-		if out.Status == "tle" {
+		switch out.Status {
+		case "tle":
 			row.Status = models.JudgeTLE
-		} else if out.Status == "error" {
+		case "mle":
+			row.Status = models.JudgeMLE
+		case "error":
 			row.Status = models.JudgeError
-		} else if judgepkg.OutputsMatch(out.Stdout, tc.ExpectedOutput) {
-			row.Passed = true
-			row.Status = models.JudgeAccepted
-			passed++
-			earnedWeight += weight
-		} else {
-			row.Status = models.JudgeWrong
+		default:
+			if judgepkg.OutputsMatch(out.Stdout, tc.ExpectedOutput) {
+				row.Passed = true
+				row.Status = models.JudgeAccepted
+				passed++
+				earnedWeight += weight
+			} else {
+				row.Status = models.JudgeWrong
+			}
 		}
 		results = append(results, row)
 	}
@@ -241,7 +293,25 @@ func (s *CodingService) evaluateCode(
 	} else if passed > 0 {
 		status = models.JudgePartial
 	}
-	marksAwarded := float64(totalMarks) * float64(earnedWeight) / float64(totalWeight)
+
+	// Calculate marks based on scoring mode.
+	passRatio := float64(earnedWeight) / float64(totalWeight)
+	var marksAwarded float64
+	switch scoringMode {
+	case "attempt_penalty":
+		// Reduce max marks by 10% per prior failed attempt (floor 0).
+		penalty := float64(failedAttempts) * 0.1
+		if penalty > 1 {
+			penalty = 1
+		}
+		effectiveMax := float64(totalMarks) * (1 - penalty)
+		marksAwarded = effectiveMax * passRatio
+	default: // "weighted"
+		marksAwarded = float64(totalMarks) * passRatio
+	}
+	if marksAwarded < 0 {
+		marksAwarded = 0
+	}
 
 	return &dto.CodingRunResult{
 		Status:       status,

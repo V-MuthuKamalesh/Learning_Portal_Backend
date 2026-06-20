@@ -32,14 +32,15 @@ type StudentAssessmentView struct {
 
 // AttemptDetail is the in-progress attempt payload.
 type AttemptDetail struct {
-	ID           string                        `json:"id"`
-	AssessmentID string                        `json:"assessment_id"`
-	Status       string                        `json:"status"`
-	StartedAt    time.Time                     `json:"started_at"`
-	ExpiresAt    time.Time                     `json:"expires_at"`
-	Questions    []AttemptQuestion               `json:"questions"`
-	Answers      map[string]int                  `json:"answers"`
-	Coding       map[string]CodingSubmissionView `json:"coding,omitempty"`
+	ID                string                        `json:"id"`
+	AssessmentID      string                        `json:"assessment_id"`
+	Status            string                        `json:"status"`
+	StartedAt         time.Time                     `json:"started_at"`
+	ExpiresAt         time.Time                     `json:"expires_at"`
+	Questions         []AttemptQuestion             `json:"questions"`
+	Answers           map[string]int                `json:"answers"`
+	Coding            map[string]CodingSubmissionView `json:"coding,omitempty"`
+	CodingScoringMode string                        `json:"coding_scoring_mode,omitempty"`
 }
 
 // AttemptQuestion is a sanitized question for students.
@@ -64,12 +65,14 @@ type AttemptQuestion struct {
 
 // CodingSubmissionView is the student's saved code for a question.
 type CodingSubmissionView struct {
-	Language     string  `json:"language"`
-	SourceCode   string  `json:"source_code"`
-	Status       string  `json:"status"`
-	PassedCases  int     `json:"passed_cases"`
-	TotalCases   int     `json:"total_cases"`
-	MarksAwarded float64 `json:"marks_awarded"`
+	Language       string  `json:"language"`
+	SourceCode     string  `json:"source_code"`
+	Status         string  `json:"status"`
+	PassedCases    int     `json:"passed_cases"`
+	TotalCases     int     `json:"total_cases"`
+	MarksAwarded   float64 `json:"marks_awarded"`
+	AttemptCount   int     `json:"attempt_count"`
+	FailedAttempts int     `json:"failed_attempts"`
 }
 
 // TestCaseResult is one judge verdict row.
@@ -86,12 +89,14 @@ type TestCaseResult struct {
 
 // CodingRunResult is returned from run/submit endpoints.
 type CodingRunResult struct {
-	Status      string           `json:"status"`
-	PassedCases int              `json:"passed_cases"`
-	TotalCases  int              `json:"total_cases"`
-	MarksAwarded float64         `json:"marks_awarded"`
-	Results     []TestCaseResult `json:"results"`
-	Stdout      string           `json:"stdout,omitempty"`
-	Stderr      string           `json:"stderr,omitempty"`
-	RuntimeMS   int              `json:"runtime_ms,omitempty"`
+	Status         string           `json:"status"`
+	PassedCases    int              `json:"passed_cases"`
+	TotalCases     int              `json:"total_cases"`
+	MarksAwarded   float64          `json:"marks_awarded"`
+	Results        []TestCaseResult `json:"results"`
+	Stdout         string           `json:"stdout,omitempty"`
+	Stderr         string           `json:"stderr,omitempty"`
+	RuntimeMS      int              `json:"runtime_ms,omitempty"`
+	AttemptCount   int              `json:"attempt_count,omitempty"`
+	FailedAttempts int              `json:"failed_attempts,omitempty"`
 }

@@ -37,11 +37,15 @@ type Assessment struct {
 	PassingMarks     int        `gorm:"default:0" json:"passing_marks"`
 	MCQCount         int        `gorm:"default:0" json:"mcq_count"`
 	CodingCount      int        `gorm:"default:0" json:"coding_count"`
-	ShuffleQuestions bool       `gorm:"default:false" json:"shuffle_questions"`
-	NegativeMarking  bool       `gorm:"default:false" json:"negative_marking"`
-	NegativeMarks    float64    `gorm:"default:0" json:"negative_marks"`
-	AutoSubmit       bool       `gorm:"default:true" json:"auto_submit"`
-	Status           string     `gorm:"size:20;not null;default:'draft'" json:"status"`
+	ShuffleQuestions  bool       `gorm:"default:false" json:"shuffle_questions"`
+	NegativeMarking   bool       `gorm:"default:false" json:"negative_marking"`
+	NegativeMarks     float64    `gorm:"default:0" json:"negative_marks"`
+	AutoSubmit        bool       `gorm:"default:true" json:"auto_submit"`
+	// CodingScoringMode controls how coding question marks are calculated.
+	// "weighted" = marks proportional to test-case weights (default)
+	// "attempt_penalty" = 10% mark deduction per prior failed full submission
+	CodingScoringMode string     `gorm:"size:30;default:'weighted'" json:"coding_scoring_mode"`
+	Status            string     `gorm:"size:20;not null;default:'draft'" json:"status"`
 	CreatedBy        *uuid.UUID `gorm:"type:uuid" json:"created_by"`
 
 	Questions   []AssessmentQuestion   `gorm:"foreignKey:AssessmentID" json:"questions,omitempty"`

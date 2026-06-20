@@ -63,6 +63,11 @@ type CodingSubmission struct {
 	MemoryKB             int        `json:"memory_kb"`
 	Verdict              JSON       `gorm:"type:jsonb" json:"verdict"`
 	IsPractice           bool       `gorm:"default:false" json:"is_practice"`
+	// AttemptCount tracks how many times the student submitted code for this question.
+	AttemptCount   int `gorm:"default:1" json:"attempt_count"`
+	// FailedAttempts counts prior submits that did not achieve full acceptance,
+	// used by the "attempt_penalty" scoring mode to apply a 10%/attempt deduction.
+	FailedAttempts int `gorm:"default:0" json:"failed_attempts"`
 }
 
 // AssessmentResult is the final, rankable score per student per assessment.
