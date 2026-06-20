@@ -28,6 +28,7 @@ func (h *AssessmentHandler) Register(rg *gin.RouterGroup, authMW gin.HandlerFunc
 	g.PUT("/:id", middleware.RequirePermission("assessment", "update"), h.update)
 	g.DELETE("/:id", middleware.RequirePermission("assessment", "delete"), h.remove)
 	g.POST("/:id/questions", middleware.RequirePermission("assessment", "update"), h.attachQuestions)
+	g.PATCH("/:id/questions/:qid", middleware.RequirePermission("assessment", "update"), h.updateQuestion)
 	g.POST("/:id/assign", middleware.RequirePermission("assessment", "update"), h.assign)
 	g.POST("/:id/publish", middleware.RequirePermission("assessment", "publish"), h.publish)
 	g.GET("/:id/results", middleware.RequirePermission("result", "read"), h.results)
@@ -142,6 +143,27 @@ func (h *AssessmentHandler) publish(c *gin.Context) {
 		return
 	}
 	response.OK(c, item)
+}
+
+func (h *AssessmentHandler) updateQuestion(c *gin.Context) {
+	id, ok := paramUUID(c, "id")
+	if !ok {
+		return
+	}
+	qid, ok := paramUUID(c, "qid")
+	if !ok {
+		return
+	}
+	var req dto.UpdateAssessmentQuestionRequest
+	if errs := validator.BindJSON(c, &req); errs != nil {
+		response.BadRequest(c, "validation failed", errs)
+		return
+	}
+	if err := h.svc.UpdateQuestion(collegeScope(c), id, qid, req); err != nil {
+		response.Internal(c, "failed to update question slot")
+		return
+	}
+	response.OK(c, gin.H{"updated": true})
 }
 
 func (h *AssessmentHandler) results(c *gin.Context) {

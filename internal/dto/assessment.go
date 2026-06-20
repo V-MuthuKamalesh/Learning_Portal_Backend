@@ -4,32 +4,45 @@ import "time"
 
 // CreateAssessmentRequest creates a draft assessment shell.
 type CreateAssessmentRequest struct {
-	Title             string  `json:"title" binding:"required"`
-	Description       string  `json:"description"`
-	Type              string  `json:"type" binding:"required"`
-	DurationMinutes   int     `json:"duration_minutes"`
-	TotalMarks        int     `json:"total_marks"`
-	PassingMarks      int     `json:"passing_marks"`
-	NegativeMarking   bool    `json:"negative_marking"`
-	NegativeMarks     float64 `json:"negative_marks"`
-	ShuffleQuestions  bool    `json:"shuffle_questions"`
-	CodingScoringMode string  `json:"coding_scoring_mode"` // "weighted" | "attempt_penalty"
+	Title                string  `json:"title" binding:"required"`
+	Description          string  `json:"description"`
+	Type                 string  `json:"type" binding:"required"`
+	DurationMinutes      int     `json:"duration_minutes"`
+	TotalMarks           int     `json:"total_marks"`
+	PassingMarks         int     `json:"passing_marks"`
+	NegativeMarking      bool    `json:"negative_marking"`
+	NegativeMarks        float64 `json:"negative_marks"`
+	ShuffleQuestions     bool    `json:"shuffle_questions"`
+	CodingScoringMode    string  `json:"coding_scoring_mode"`    // "weighted" | "attempt_penalty"
+	MCQDurationMinutes   int     `json:"mcq_duration_minutes"`   // 0 = use full DurationMinutes for MCQ phase
+	AllowPrevious        bool    `json:"allow_previous"`
+	CodingTimingMode     string  `json:"coding_timing_mode"`     // "combined" | "per_question"
 }
 
 // UpdateAssessmentRequest edits assessment metadata and schedule.
 type UpdateAssessmentRequest struct {
-	Title             *string    `json:"title"`
-	Description       *string    `json:"description"`
-	Type              *string    `json:"type"`
-	DurationMinutes   *int       `json:"duration_minutes"`
-	TotalMarks        *int       `json:"total_marks"`
-	PassingMarks      *int       `json:"passing_marks"`
-	NegativeMarking   *bool      `json:"negative_marking"`
-	NegativeMarks     *float64   `json:"negative_marks"`
-	ShuffleQuestions  *bool      `json:"shuffle_questions"`
-	CodingScoringMode *string    `json:"coding_scoring_mode"`
-	StartTime         *time.Time `json:"start_time"`
-	EndTime           *time.Time `json:"end_time"`
+	Title                *string    `json:"title"`
+	Description          *string    `json:"description"`
+	Type                 *string    `json:"type"`
+	DurationMinutes      *int       `json:"duration_minutes"`
+	TotalMarks           *int       `json:"total_marks"`
+	PassingMarks         *int       `json:"passing_marks"`
+	NegativeMarking      *bool      `json:"negative_marking"`
+	NegativeMarks        *float64   `json:"negative_marks"`
+	ShuffleQuestions     *bool      `json:"shuffle_questions"`
+	CodingScoringMode    *string    `json:"coding_scoring_mode"`
+	MCQDurationMinutes   *int       `json:"mcq_duration_minutes"`
+	AllowPrevious        *bool      `json:"allow_previous"`
+	CodingTimingMode     *string    `json:"coding_timing_mode"`
+	StartTime            *time.Time `json:"start_time"`
+	EndTime              *time.Time `json:"end_time"`
+}
+
+// UpdateAssessmentQuestionRequest patches per-question slot settings.
+type UpdateAssessmentQuestionRequest struct {
+	CodingTimeLimitMinutes *int `json:"coding_time_limit_minutes"`
+	Marks                  *int `json:"marks"`
+	Ord                    *int `json:"ord"`
 }
 
 // AttachQuestionsRequest links questions to an assessment.

@@ -44,8 +44,14 @@ type Assessment struct {
 	// CodingScoringMode controls how coding question marks are calculated.
 	// "weighted" = marks proportional to test-case weights (default)
 	// "attempt_penalty" = 10% mark deduction per prior failed full submission
-	CodingScoringMode string     `gorm:"size:30;default:'weighted'" json:"coding_scoring_mode"`
-	Status            string     `gorm:"size:20;not null;default:'draft'" json:"status"`
+	CodingScoringMode     string `gorm:"size:30;default:'weighted'" json:"coding_scoring_mode"`
+	// MCQDurationMinutes is the shared time budget for the MCQ phase (0 = use full DurationMinutes).
+	MCQDurationMinutes    int    `gorm:"default:0" json:"mcq_duration_minutes"`
+	// AllowPrevious lets students navigate back to previous questions.
+	AllowPrevious         bool   `gorm:"default:true" json:"allow_previous"`
+	// CodingTimingMode is "combined" (one timer for all coding) or "per_question" (each question has its own timer).
+	CodingTimingMode      string `gorm:"size:20;default:'combined'" json:"coding_timing_mode"`
+	Status                string `gorm:"size:20;not null;default:'draft'" json:"status"`
 	CreatedBy        *uuid.UUID `gorm:"type:uuid" json:"created_by"`
 
 	Questions   []AssessmentQuestion   `gorm:"foreignKey:AssessmentID" json:"questions,omitempty"`
@@ -73,11 +79,13 @@ func (a *Assessment) Workflow(now time.Time) string {
 // AssessmentQuestion links a question into an assessment with order & mark override.
 type AssessmentQuestion struct {
 	Base
-	AssessmentID uuid.UUID `gorm:"type:uuid;not null;index:idx_aq_unique,unique" json:"assessment_id"`
-	QuestionID   uuid.UUID `gorm:"type:uuid;not null;index:idx_aq_unique,unique" json:"question_id"`
-	Question     *Question `gorm:"foreignKey:QuestionID" json:"question,omitempty"`
-	Ord          int       `gorm:"default:0" json:"ord"`
-	Marks        *int      `json:"marks"`
+	AssessmentID          uuid.UUID `gorm:"type:uuid;not null;index:idx_aq_unique,unique" json:"assessment_id"`
+	QuestionID            uuid.UUID `gorm:"type:uuid;not null;index:idx_aq_unique,unique" json:"question_id"`
+	Question              *Question `gorm:"foreignKey:QuestionID" json:"question,omitempty"`
+	Ord                   int       `gorm:"default:0" json:"ord"`
+	Marks                 *int      `json:"marks"`
+	// CodingTimeLimitMinutes overrides per-question time when CodingTimingMode="per_question" (0 = inherit from question's time_limit_ms).
+	CodingTimeLimitMinutes int      `gorm:"default:0" json:"coding_time_limit_minutes"`
 }
 
 // AssessmentAssignment targets an assessment at a cohort.

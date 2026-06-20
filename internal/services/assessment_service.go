@@ -42,20 +42,27 @@ func (s *AssessmentService) Create(collegeID uuid.UUID, adminID uuid.UUID, req d
 	if scoringMode != "attempt_penalty" {
 		scoringMode = "weighted"
 	}
+	codingMode := req.CodingTimingMode
+	if codingMode != "per_question" {
+		codingMode = "combined"
+	}
 	a := &models.Assessment{
-		CollegeID:         collegeID,
-		Title:             req.Title,
-		Description:       req.Description,
-		Type:              aType,
-		DurationMinutes:   duration,
-		TotalMarks:        marks,
-		PassingMarks:      req.PassingMarks,
-		NegativeMarking:   req.NegativeMarking,
-		NegativeMarks:     req.NegativeMarks,
-		ShuffleQuestions:  req.ShuffleQuestions,
-		CodingScoringMode: scoringMode,
-		Status:            models.StatusDraft,
-		CreatedBy:         &adminID,
+		CollegeID:            collegeID,
+		Title:                req.Title,
+		Description:          req.Description,
+		Type:                 aType,
+		DurationMinutes:      duration,
+		TotalMarks:           marks,
+		PassingMarks:         req.PassingMarks,
+		NegativeMarking:      req.NegativeMarking,
+		NegativeMarks:        req.NegativeMarks,
+		ShuffleQuestions:     req.ShuffleQuestions,
+		CodingScoringMode:    scoringMode,
+		MCQDurationMinutes:   req.MCQDurationMinutes,
+		AllowPrevious:        req.AllowPrevious,
+		CodingTimingMode:     codingMode,
+		Status:               models.StatusDraft,
+		CreatedBy:            &adminID,
 	}
 	return a, s.repo.Create(a)
 }
@@ -69,6 +76,7 @@ func (s *AssessmentService) Update(collegeID, id uuid.UUID, req dto.UpdateAssess
 	applyStr(&a.Description, req.Description)
 	applyStr(&a.Type, req.Type)
 	applyStr(&a.CodingScoringMode, req.CodingScoringMode)
+	applyStr(&a.CodingTimingMode, req.CodingTimingMode)
 	if req.DurationMinutes != nil {
 		a.DurationMinutes = *req.DurationMinutes
 	}
@@ -87,6 +95,12 @@ func (s *AssessmentService) Update(collegeID, id uuid.UUID, req dto.UpdateAssess
 	if req.ShuffleQuestions != nil {
 		a.ShuffleQuestions = *req.ShuffleQuestions
 	}
+	if req.MCQDurationMinutes != nil {
+		a.MCQDurationMinutes = *req.MCQDurationMinutes
+	}
+	if req.AllowPrevious != nil {
+		a.AllowPrevious = *req.AllowPrevious
+	}
 	if req.StartTime != nil {
 		a.StartTime = req.StartTime
 	}
@@ -94,6 +108,26 @@ func (s *AssessmentService) Update(collegeID, id uuid.UUID, req dto.UpdateAssess
 		a.EndTime = req.EndTime
 	}
 	return a, s.repo.Update(a)
+}
+
+func (s *AssessmentService) UpdateQuestion(collegeID, assessmentID, questionID uuid.UUID, req dto.UpdateAssessmentQuestionRequest) error {
+	if _, err := s.repo.ByID(collegeID, assessmentID); err != nil {
+		return err
+	}
+	updates := map[string]any{}
+	if req.CodingTimeLimitMinutes != nil {
+		updates["coding_time_limit_minutes"] = *req.CodingTimeLimitMinutes
+	}
+	if req.Marks != nil {
+		updates["marks"] = *req.Marks
+	}
+	if req.Ord != nil {
+		updates["ord"] = *req.Ord
+	}
+	if len(updates) == 0 {
+		return nil
+	}
+	return s.repo.UpdateAssessmentQuestion(assessmentID, questionID, updates)
 }
 
 func (s *AssessmentService) Delete(collegeID, id uuid.UUID) error {

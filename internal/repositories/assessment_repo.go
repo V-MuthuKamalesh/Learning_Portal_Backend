@@ -80,6 +80,12 @@ func (r *AssessmentRepository) Assign(assessmentID uuid.UUID, targetType string,
 	return r.db.Create(&a).Error
 }
 
+func (r *AssessmentRepository) UpdateAssessmentQuestion(assessmentID, questionID uuid.UUID, updates map[string]any) error {
+	return r.db.Model(&models.AssessmentQuestion{}).
+		Where("assessment_id = ? AND question_id = ?", assessmentID, questionID).
+		Updates(updates).Error
+}
+
 func (r *AssessmentRepository) Publish(id uuid.UUID, start, end *time.Time) error {
 	updates := map[string]any{"status": models.StatusPublished}
 	if start != nil {

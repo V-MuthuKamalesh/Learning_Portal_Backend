@@ -171,12 +171,18 @@ func (s *AttemptService) buildAttemptDetail(a *models.Assessment, sub *models.Su
 		}
 		if aq.Question.Type == models.QuestionProgramming && aq.Question.Programming != nil {
 			p := aq.Question.Programming
+			// Resolve per-question coding time: slot override → question's time_limit_ms → 0
+			codingTimeLimitMin := aq.CodingTimeLimitMinutes
+			if codingTimeLimitMin == 0 && p.TimeLimitMS > 0 {
+				codingTimeLimitMin = p.TimeLimitMS / 60000
+			}
 			questions = append(questions, dto.AttemptQuestion{
-				ID:                   aq.QuestionID.String(),
-				AssessmentQuestionID: aq.ID.String(),
-				Type:                 models.QuestionProgramming,
-				Title:                p.Title,
-				Description:          p.Description,
+				ID:                     aq.QuestionID.String(),
+				AssessmentQuestionID:   aq.ID.String(),
+				Type:                   models.QuestionProgramming,
+				CodingTimeLimitMinutes: codingTimeLimitMin,
+				Title:                  p.Title,
+				Description:            p.Description,
 				InputFormat:          p.InputFormat,
 				OutputFormat:         p.OutputFormat,
 				Constraints:          p.Constraints,
@@ -193,11 +199,18 @@ func (s *AttemptService) buildAttemptDetail(a *models.Assessment, sub *models.Su
 	if scoringMode == "" {
 		scoringMode = "weighted"
 	}
+	codingMode := a.CodingTimingMode
+	if codingMode == "" {
+		codingMode = "combined"
+	}
 	return &dto.AttemptDetail{
 		ID: sub.ID.String(), AssessmentID: a.ID.String(), Status: sub.Status,
 		StartedAt: sub.StartedAt, ExpiresAt: expires,
 		Questions: questions, Answers: answers, Coding: coding,
-		CodingScoringMode: scoringMode,
+		CodingScoringMode:  scoringMode,
+		MCQDurationMinutes: a.MCQDurationMinutes,
+		AllowPrevious:      a.AllowPrevious,
+		CodingTimingMode:   codingMode,
 	}
 }
 

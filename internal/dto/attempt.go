@@ -32,15 +32,18 @@ type StudentAssessmentView struct {
 
 // AttemptDetail is the in-progress attempt payload.
 type AttemptDetail struct {
-	ID                string                        `json:"id"`
-	AssessmentID      string                        `json:"assessment_id"`
-	Status            string                        `json:"status"`
-	StartedAt         time.Time                     `json:"started_at"`
-	ExpiresAt         time.Time                     `json:"expires_at"`
-	Questions         []AttemptQuestion             `json:"questions"`
-	Answers           map[string]int                `json:"answers"`
-	Coding            map[string]CodingSubmissionView `json:"coding,omitempty"`
-	CodingScoringMode string                        `json:"coding_scoring_mode,omitempty"`
+	ID                   string                          `json:"id"`
+	AssessmentID         string                          `json:"assessment_id"`
+	Status               string                          `json:"status"`
+	StartedAt            time.Time                       `json:"started_at"`
+	ExpiresAt            time.Time                       `json:"expires_at"`
+	Questions            []AttemptQuestion               `json:"questions"`
+	Answers              map[string]int                  `json:"answers"`
+	Coding               map[string]CodingSubmissionView `json:"coding,omitempty"`
+	CodingScoringMode    string                          `json:"coding_scoring_mode,omitempty"`
+	MCQDurationMinutes   int                             `json:"mcq_duration_minutes"`
+	AllowPrevious        bool                            `json:"allow_previous"`
+	CodingTimingMode     string                          `json:"coding_timing_mode"`
 }
 
 // AttemptQuestion is a sanitized question for students.
@@ -57,10 +60,11 @@ type AttemptQuestion struct {
 	Constraints          string   `json:"constraints,omitempty"`
 	SampleInput          string   `json:"sample_input,omitempty"`
 	SampleOutput         string   `json:"sample_output,omitempty"`
-	TimeLimitMS          int      `json:"time_limit_ms,omitempty"`
-	MemoryLimitMB        int      `json:"memory_limit_mb,omitempty"`
-	Marks                int      `json:"marks"`
-	Ord                  int      `json:"ord"`
+	TimeLimitMS              int `json:"time_limit_ms,omitempty"`
+	MemoryLimitMB            int `json:"memory_limit_mb,omitempty"`
+	CodingTimeLimitMinutes   int `json:"coding_time_limit_minutes,omitempty"`
+	Marks                    int `json:"marks"`
+	Ord                      int `json:"ord"`
 }
 
 // CodingSubmissionView is the student's saved code for a question.
