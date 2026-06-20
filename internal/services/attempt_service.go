@@ -3,6 +3,7 @@ package services
 import (
 	"errors"
 	"fmt"
+	"math/rand"
 	"time"
 
 	"github.com/collegeassess/backend/internal/dto"
@@ -57,6 +58,7 @@ func (s *AttemptService) ListAssessments(collegeID, studentID uuid.UUID) ([]dto.
 			Type: a.Type, Status: a.Status, Workflow: a.Workflow(now),
 			DurationMinutes: a.DurationMinutes, TotalMarks: a.TotalMarks,
 			StartTime: a.StartTime, EndTime: a.EndTime,
+			Company: a.Company, Tags: a.Tags,
 		}
 		if sub, err := s.attemptRepo.FindSubmission(a.ID, studentID); err == nil {
 			sid := sub.ID.String()
@@ -194,6 +196,9 @@ func (s *AttemptService) buildAttemptDetail(a *models.Assessment, sub *models.Su
 				Ord:                  aq.Ord,
 			})
 		}
+	}
+	if a.ShuffleQuestions {
+		rand.Shuffle(len(questions), func(i, j int) { questions[i], questions[j] = questions[j], questions[i] })
 	}
 	scoringMode := a.CodingScoringMode
 	if scoringMode == "" {

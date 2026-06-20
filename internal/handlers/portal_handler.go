@@ -52,8 +52,10 @@ func (h *StudentPortalHandler) Register(rg *gin.RouterGroup, authMW gin.HandlerF
 	practice.Use(authMW, middleware.RequireStudent())
 	practice.GET("/modules", h.practiceModules)
 	practice.GET("/modules/:id", h.practiceModule)
+	practice.POST("/modules/:id/questions/:qid/attempt", h.attemptPracticeQuestion)
 
 	rg.GET("/leaderboard", authMW, middleware.RequireStudent(), h.leaderboard)
+	rg.GET("/me/stats", authMW, middleware.RequireStudent(), h.myStats)
 }
 
 func (h *StudentPortalHandler) principal(c *gin.Context) (*middleware.Principal, bool) {
@@ -294,6 +296,45 @@ func (h *StudentPortalHandler) myProgress(c *gin.Context) {
 		return
 	}
 	response.OK(c, items)
+}
+
+func (h *StudentPortalHandler) attemptPracticeQuestion(c *gin.Context) {
+	p, ok := h.principal(c)
+	if !ok {
+		return
+	}
+	mid, ok := paramUUID(c, "id")
+	if !ok {
+		return
+	}
+	qid, ok := paramUUID(c, "qid")
+	if !ok {
+		return
+	}
+	var req dto.PracticeAttemptRequest
+	if errs := validator.BindJSON(c, &req); errs != nil {
+		response.BadRequest(c, "validation failed", errs)
+		return
+	}
+	result, err := h.practice.AttemptMCQQuestion(p.CollegeID, p.UserID, mid, qid, req.SelectedIndex)
+	if err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+	response.OK(c, result)
+}
+
+func (h *StudentPortalHandler) myStats(c *gin.Context) {
+	p, ok := h.principal(c)
+	if !ok {
+		return
+	}
+	stats, err := h.practice.StudentStats(p.UserID)
+	if err != nil {
+		response.Internal(c, "failed to load stats")
+		return
+	}
+	response.OK(c, stats)
 }
 
 func (h *StudentPortalHandler) myNotifications(c *gin.Context) {

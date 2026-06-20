@@ -51,6 +51,10 @@ type Assessment struct {
 	AllowPrevious         bool   `gorm:"default:true" json:"allow_previous"`
 	// CodingTimingMode is "combined" (one timer for all coding) or "per_question" (each question has its own timer).
 	CodingTimingMode      string `gorm:"size:20;default:'combined'" json:"coding_timing_mode"`
+	// Company is the target company name for placement mocks (e.g. "TCS", "Infosys").
+	Company               string `gorm:"size:100" json:"company"`
+	// Tags is a comma-separated list of topic/category labels (e.g. "aptitude,verbal,placement").
+	Tags                  string `gorm:"size:255" json:"tags"`
 	Status                string `gorm:"size:20;not null;default:'draft'" json:"status"`
 	CreatedBy        *uuid.UUID `gorm:"type:uuid" json:"created_by"`
 

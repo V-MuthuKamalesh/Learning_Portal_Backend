@@ -25,6 +25,8 @@ type StudentAssessmentView struct {
 	TotalMarks      int        `json:"total_marks"`
 	StartTime       *time.Time `json:"start_time"`
 	EndTime         *time.Time `json:"end_time"`
+	Company         string     `json:"company,omitempty"`
+	Tags            string     `json:"tags,omitempty"`
 	SubmissionID    *string    `json:"submission_id,omitempty"`
 	AttemptStatus   string     `json:"attempt_status,omitempty"`
 	Score           *float64   `json:"score,omitempty"`

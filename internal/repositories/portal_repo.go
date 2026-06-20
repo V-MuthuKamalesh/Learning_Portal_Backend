@@ -186,7 +186,7 @@ func (r *PracticeRepository) ListModules(collegeID uuid.UUID) ([]models.Practice
 
 func (r *PracticeRepository) ModuleByID(collegeID, id uuid.UUID) (*models.PracticeModule, error) {
 	var m models.PracticeModule
-	err := r.db.Preload("Questions.MCQ").
+	err := r.db.Preload("Questions").Preload("Questions.MCQ").Preload("Questions.Programming").
 		Where("college_id = ? AND id = ?", collegeID, id).First(&m).Error
 	return wrap(&m, err)
 }

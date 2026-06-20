@@ -44,6 +44,38 @@ type ReorderModuleQuestionsRequest struct {
 	QuestionIDs []string `json:"question_ids" binding:"required,min=1"`
 }
 
+// PracticeAttemptRequest submits an MCQ answer in a practice module (instant feedback).
+type PracticeAttemptRequest struct {
+	SelectedIndex int `json:"selected_index"`
+}
+
+// PracticeAttemptResult returns immediate feedback for a practice MCQ attempt.
+type PracticeAttemptResult struct {
+	Correct      bool   `json:"correct"`
+	CorrectIndex int    `json:"correct_index"`
+	Explanation  string `json:"explanation"`
+	MarksAwarded int    `json:"marks_awarded"`
+}
+
+// StudentStatsResponse is aggregated performance data for the student analytics page.
+type StudentStatsResponse struct {
+	TotalAttempted   int                  `json:"total_attempted"`
+	AverageScore     float64              `json:"average_score"`
+	BestScore        float64              `json:"best_score"`
+	TotalPassed      int                  `json:"total_passed"`
+	PracticeModules  int                  `json:"practice_modules_started"`
+	CompletedModules int                  `json:"practice_modules_completed"`
+	TopicBreakdown   []TopicStat          `json:"topic_breakdown"`
+}
+
+// TopicStat holds per-topic performance aggregates.
+type TopicStat struct {
+	Topic      string  `json:"topic"`
+	Attempted  int     `json:"attempted"`
+	Correct    int     `json:"correct"`
+	Accuracy   float64 `json:"accuracy"`
+}
+
 // BulkMCQRequest imports many MCQ questions in one call.
 type BulkMCQRequest struct {
 	Questions []CreateMCQQuestionRequest `json:"questions" binding:"required,min=1"`

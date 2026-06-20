@@ -61,6 +61,8 @@ func (s *AssessmentService) Create(collegeID uuid.UUID, adminID uuid.UUID, req d
 		MCQDurationMinutes:   req.MCQDurationMinutes,
 		AllowPrevious:        req.AllowPrevious,
 		CodingTimingMode:     codingMode,
+		Company:              req.Company,
+		Tags:                 req.Tags,
 		Status:               models.StatusDraft,
 		CreatedBy:            &adminID,
 	}
@@ -107,6 +109,8 @@ func (s *AssessmentService) Update(collegeID, id uuid.UUID, req dto.UpdateAssess
 	if req.EndTime != nil {
 		a.EndTime = req.EndTime
 	}
+	applyStr(&a.Company, req.Company)
+	applyStr(&a.Tags, req.Tags)
 	return a, s.repo.Update(a)
 }
 

@@ -73,7 +73,7 @@ func New(d Deps) *gin.Engine {
 	attemptSvc := services.NewAttemptService(assessmentRepo, attemptRepo, studentRepo, notifRepo)
 	judgeClient := judge.NewClient(d.Cfg.Judge)
 	codingSvc := services.NewCodingService(judgeClient, attemptRepo, assessmentRepo, studentRepo)
-	practiceSvc := services.NewPracticeService(practiceRepo, studentRepo)
+	practiceSvc := services.NewPracticeService(practiceRepo, studentRepo, attemptRepo)
 	adminPracticeSvc := services.NewAdminPracticeService(practiceRepo, questionRepo)
 	notifSvc := services.NewNotificationService(notifRepo)
 

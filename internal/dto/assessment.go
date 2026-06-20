@@ -13,10 +13,12 @@ type CreateAssessmentRequest struct {
 	NegativeMarking      bool    `json:"negative_marking"`
 	NegativeMarks        float64 `json:"negative_marks"`
 	ShuffleQuestions     bool    `json:"shuffle_questions"`
-	CodingScoringMode    string  `json:"coding_scoring_mode"`    // "weighted" | "attempt_penalty"
-	MCQDurationMinutes   int     `json:"mcq_duration_minutes"`   // 0 = use full DurationMinutes for MCQ phase
+	CodingScoringMode    string  `json:"coding_scoring_mode"`
+	MCQDurationMinutes   int     `json:"mcq_duration_minutes"`
 	AllowPrevious        bool    `json:"allow_previous"`
-	CodingTimingMode     string  `json:"coding_timing_mode"`     // "combined" | "per_question"
+	CodingTimingMode     string  `json:"coding_timing_mode"`
+	Company              string  `json:"company"` // target company e.g. "TCS", "Infosys"
+	Tags                 string  `json:"tags"`    // comma-separated: "aptitude,verbal,placement"
 }
 
 // UpdateAssessmentRequest edits assessment metadata and schedule.
@@ -36,6 +38,8 @@ type UpdateAssessmentRequest struct {
 	CodingTimingMode     *string    `json:"coding_timing_mode"`
 	StartTime            *time.Time `json:"start_time"`
 	EndTime              *time.Time `json:"end_time"`
+	Company              *string    `json:"company"`
+	Tags                 *string    `json:"tags"`
 }
 
 // UpdateAssessmentQuestionRequest patches per-question slot settings.
