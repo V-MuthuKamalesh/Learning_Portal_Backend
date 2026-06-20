@@ -1,6 +1,8 @@
 package services
 
 import (
+	"fmt"
+
 	"github.com/collegeassess/backend/internal/dto"
 	"github.com/collegeassess/backend/internal/models"
 	"github.com/collegeassess/backend/internal/repositories"
@@ -106,4 +108,28 @@ func (s *QuestionService) CreateProgramming(collegeID uuid.UUID, adminID uuid.UU
 
 func (s *QuestionService) Get(collegeID, id uuid.UUID) (*models.Question, error) {
 	return s.repo.ByID(collegeID, id)
+}
+
+// BulkCreateMCQ imports many MCQ questions, returning counts and per-item errors.
+func (s *QuestionService) BulkCreateMCQ(collegeID, adminID uuid.UUID, reqs []dto.CreateMCQQuestionRequest) (created int, errs []string) {
+	for i, req := range reqs {
+		if _, err := s.CreateMCQ(collegeID, adminID, req); err != nil {
+			errs = append(errs, fmt.Sprintf("[%d] %q: %v", i+1, req.Body, err))
+		} else {
+			created++
+		}
+	}
+	return
+}
+
+// BulkCreateProgramming imports many coding questions, returning counts and per-item errors.
+func (s *QuestionService) BulkCreateProgramming(collegeID, adminID uuid.UUID, reqs []dto.CreateProgrammingQuestionRequest) (created int, errs []string) {
+	for i, req := range reqs {
+		if _, err := s.CreateProgramming(collegeID, adminID, req); err != nil {
+			errs = append(errs, fmt.Sprintf("[%d] %q: %v", i+1, req.Title, err))
+		} else {
+			created++
+		}
+	}
+	return
 }

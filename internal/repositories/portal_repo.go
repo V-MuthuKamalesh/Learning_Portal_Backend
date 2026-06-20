@@ -209,8 +209,52 @@ func (r *PracticeRepository) ProgressForStudent(studentID uuid.UUID) ([]models.S
 
 func (r *PracticeRepository) CreateModule(m *models.PracticeModule) error { return r.db.Create(m).Error }
 
-func (r *PracticeRepository) LinkQuestion(moduleID, questionID uuid.UUID, ord int) error {
-	link := models.ModuleQuestion{ModuleID: moduleID, QuestionID: questionID, Ord: ord}
+func (r *PracticeRepository) UpdateModule(m *models.PracticeModule) error { return r.db.Save(m).Error }
+
+func (r *PracticeRepository) DeleteModule(collegeID, id uuid.UUID) error {
+	return r.db.Where("college_id = ? AND id = ?", collegeID, id).Delete(&models.PracticeModule{}).Error
+}
+
+func (r *PracticeRepository) LinkQuestion(moduleID, questionID uuid.UUID, ord, marks, maxAttempts int) error {
+	link := models.ModuleQuestion{ModuleID: moduleID, QuestionID: questionID, Ord: ord, Marks: marks, MaxAttempts: maxAttempts}
 	return r.db.Where("module_id = ? AND question_id = ?", moduleID, questionID).
-		Assign(link).FirstOrCreate(&link).Error
+		Assign(models.ModuleQuestion{Ord: ord, Marks: marks, MaxAttempts: maxAttempts}).FirstOrCreate(&link).Error
+}
+
+func (r *PracticeRepository) UnlinkQuestion(moduleID, questionID uuid.UUID) error {
+	return r.db.Where("module_id = ? AND question_id = ?", moduleID, questionID).
+		Delete(&models.ModuleQuestion{}).Error
+}
+
+func (r *PracticeRepository) UpdateModuleQuestion(mq *models.ModuleQuestion) error {
+	return r.db.Model(mq).Updates(map[string]any{
+		"marks":        mq.Marks,
+		"max_attempts": mq.MaxAttempts,
+		"ord":          mq.Ord,
+	}).Error
+}
+
+func (r *PracticeRepository) ModuleQuestionSlot(moduleID, questionID uuid.UUID) (*models.ModuleQuestion, error) {
+	var mq models.ModuleQuestion
+	err := r.db.Where("module_id = ? AND question_id = ?", moduleID, questionID).First(&mq).Error
+	return wrap(&mq, err)
+}
+
+// ListModuleQuestions returns ordered question slots with full question data.
+func (r *PracticeRepository) ListModuleQuestions(collegeID, moduleID uuid.UUID) ([]models.ModuleQuestion, []models.Question, error) {
+	var slots []models.ModuleQuestion
+	if err := r.db.Where("module_id = ?", moduleID).Order("ord, id").Find(&slots).Error; err != nil {
+		return nil, nil, err
+	}
+	if len(slots) == 0 {
+		return slots, nil, nil
+	}
+	qids := make([]uuid.UUID, len(slots))
+	for i, s := range slots {
+		qids[i] = s.QuestionID
+	}
+	var questions []models.Question
+	err := r.db.Preload("MCQ").Preload("Programming").
+		Where("college_id = ? AND id IN ?", collegeID, qids).Find(&questions).Error
+	return slots, questions, err
 }

@@ -22,6 +22,8 @@ func (h *QuestionHandler) Register(rg *gin.RouterGroup, authMW gin.HandlerFunc) 
 	g.GET("", middleware.RequirePermission("question", "read"), h.list)
 	g.POST("/mcq", middleware.RequirePermission("question", "create"), h.createMCQ)
 	g.POST("/programming", middleware.RequirePermission("question", "create"), h.createProgramming)
+	g.POST("/bulk/mcq", middleware.RequirePermission("question", "create"), h.bulkMCQ)
+	g.POST("/bulk/coding", middleware.RequirePermission("question", "create"), h.bulkCoding)
 	g.GET("/:id", middleware.RequirePermission("question", "read"), h.get)
 }
 
@@ -62,6 +64,28 @@ func (h *QuestionHandler) createProgramming(c *gin.Context) {
 		return
 	}
 	response.Created(c, item)
+}
+
+func (h *QuestionHandler) bulkMCQ(c *gin.Context) {
+	var req dto.BulkMCQRequest
+	if errs := validator.BindJSON(c, &req); errs != nil {
+		response.BadRequest(c, "validation failed", errs)
+		return
+	}
+	p := middleware.GetPrincipal(c)
+	created, errs := h.svc.BulkCreateMCQ(collegeScope(c), p.UserID, req.Questions)
+	response.OK(c, dto.BulkImportResult{Created: created, Failed: len(errs), Errors: errs})
+}
+
+func (h *QuestionHandler) bulkCoding(c *gin.Context) {
+	var req dto.BulkCodingRequest
+	if errs := validator.BindJSON(c, &req); errs != nil {
+		response.BadRequest(c, "validation failed", errs)
+		return
+	}
+	p := middleware.GetPrincipal(c)
+	created, errs := h.svc.BulkCreateProgramming(collegeScope(c), p.UserID, req.Questions)
+	response.OK(c, dto.BulkImportResult{Created: created, Failed: len(errs), Errors: errs})
 }
 
 func (h *QuestionHandler) get(c *gin.Context) {

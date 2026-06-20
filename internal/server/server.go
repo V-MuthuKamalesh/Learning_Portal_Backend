@@ -74,10 +74,12 @@ func New(d Deps) *gin.Engine {
 	judgeClient := judge.NewClient(d.Cfg.Judge)
 	codingSvc := services.NewCodingService(judgeClient, attemptRepo, assessmentRepo, studentRepo)
 	practiceSvc := services.NewPracticeService(practiceRepo, studentRepo)
+	adminPracticeSvc := services.NewAdminPracticeService(practiceRepo, questionRepo)
 	notifSvc := services.NewNotificationService(notifRepo)
 
 	assessmentHandler := handlers.NewAssessmentHandler(assessmentSvc, attemptSvc)
 	studentPortalHandler := handlers.NewStudentPortalHandler(attemptSvc, practiceSvc, notifSvc, codingSvc)
+	adminPracticeHandler := handlers.NewAdminPracticeHandler(adminPracticeSvc)
 	resultHandler := handlers.NewResultHandler(attemptSvc)
 
 	adminRepo := repositories.NewAdminRepository(d.DB)
@@ -103,6 +105,7 @@ func New(d Deps) *gin.Engine {
 	studentPortalHandler.Register(v1, authMW)
 	resultHandler.Register(v1, authMW)
 	analyticsHandler.Register(v1, authMW)
+	adminPracticeHandler.Register(v1, authMW)
 
 	RegisterSwagger(r)
 	return r
