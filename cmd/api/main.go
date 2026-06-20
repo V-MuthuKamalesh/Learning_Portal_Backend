@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -49,6 +50,13 @@ func main() {
 
 	engine := server.New(server.Deps{Cfg: cfg, DB: db, Redis: rdb})
 
+	// Keep the judge service warm on Render free tier.
+	// Render spins down a free service after 15 min of no incoming HTTP traffic.
+	// The backend pings the judge /health every 10 minutes so it never sleeps.
+	if cfg.Judge.Enabled && cfg.Judge.URL != "" {
+		go keepJudgeWarm(cfg.Judge.URL, cfg.Judge.APIKey)
+	}
+
 	srv := &http.Server{
 		Addr:              ":" + cfg.App.Port,
 		Handler:           engine,
@@ -63,6 +71,7 @@ func main() {
 	}()
 
 	// Graceful shutdown.
+
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
@@ -71,5 +80,30 @@ func main() {
 	defer cancel()
 	if err := srv.Shutdown(ctx); err != nil {
 		logger.Error("forced shutdown", "error", err)
+	}
+}
+
+// keepJudgeWarm pings the judge /health endpoint every 10 minutes so Render
+// free-tier never spins it down (free services sleep after 15 min of no traffic).
+func keepJudgeWarm(judgeURL, apiKey string) {
+	baseURL := strings.TrimRight(judgeURL, "/")
+	client := &http.Client{Timeout: 10 * time.Second}
+	tick := time.NewTicker(10 * time.Minute)
+	defer tick.Stop()
+	for range tick.C {
+		req, err := http.NewRequest(http.MethodGet, baseURL+"/health", nil)
+		if err != nil {
+			continue
+		}
+		if apiKey != "" {
+			req.Header.Set("X-Judge-Key", apiKey)
+		}
+		resp, err := client.Do(req)
+		if err != nil {
+			logger.Warn("judge warm-ping failed", "error", err)
+			continue
+		}
+		resp.Body.Close()
+		logger.Info("judge warm-ping ok", "status", resp.StatusCode)
 	}
 }
