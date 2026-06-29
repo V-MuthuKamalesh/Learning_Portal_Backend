@@ -16,7 +16,7 @@ type PracticeModule struct {
 	Tags        string     `gorm:"size:255" json:"tags"`        // comma-separated topic tags
 	IsPublished bool       `gorm:"default:false" json:"is_published"`
 	Ord         int        `gorm:"default:0" json:"ord"`
-	Questions   []Question `gorm:"many2many:module_questions;" json:"questions,omitempty"`
+	Questions   []Question `gorm:"many2many:module_questions;joinForeignKey:ModuleID;joinReferences:QuestionID" json:"questions,omitempty"`
 }
 
 // ModuleQuestion is the ordered join between modules and questions,
